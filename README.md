@@ -115,4 +115,4 @@ GET /api/country/{countryCode}
 
 Exemplu: `GET /api/country/RO`
 
-Vezi [GeoNews Backend](../server/README.md) pentru detalii.
+Vezi [GeoNews Backend](https://github.com/jaykshirsagar/geonewsServer) pentru detalii.
