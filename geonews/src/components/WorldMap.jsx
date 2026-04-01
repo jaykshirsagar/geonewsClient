@@ -39,7 +39,7 @@ function WorldMap() {
                 e.target.setStyle({ fillColor: '#60a5fa', fillOpacity: 0.7 })
             },
             mouseout: (e) => {
-                e.target.setStyle({ fillColor: isDark ? '#1e40af' : '#3b82f6', fillOpacity: isDark ? 0.5 : 0.3 })
+                e.target.setStyle({ fillColor: countryStyle.fillColor, fillOpacity: countryStyle.fillOpacity})
             }
         })
     }
