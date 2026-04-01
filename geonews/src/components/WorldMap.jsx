@@ -55,7 +55,7 @@ function WorldMap() {
         <div className="w-full h-full relative">
             <MapContainer
                 center={[20, 0]}
-                zoom={2}
+                zoom={1}
                 minZoom={2}
                 maxZoom={6}
                 worldCopyJump={false}
