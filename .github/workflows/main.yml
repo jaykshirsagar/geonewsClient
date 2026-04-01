@@ -8,6 +8,10 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  
+defaults:
+      run:
+        working-directory: geonews
 
 jobs:
   build:
