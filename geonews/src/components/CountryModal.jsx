@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getCountryInfo } from '../services/countryService'
+import { getCountryInfo, getAiHistory, getNewsByCategory } from '../services/countryService'
 
 const TABS = [
     { id: 'Info', icon: '🌍' },
@@ -12,6 +12,12 @@ function CountryModal({ country, onClose }) {
     const [activeTab, setActiveTab] = useState('Info')
     const [data, setData] = useState(null)
     const [loading, setLoading] = useState(false)
+    const [activeCategory, setActiveCategory] = useState('GENERAL')
+    const [categoryNews, setCategoryNews] = useState([])
+    const [newsLoading, setNewsLoading] = useState(false)
+    const [history, setHistory] = useState(null)
+    const [historyLoading, setHistoryLoading] = useState(false)
+    const [historyCache, setHistoryCache] = useState({})
 
     useEffect(() => {
         if (!country) return
@@ -21,6 +27,34 @@ function CountryModal({ country, onClose }) {
             .then(res => setData(res))
             .finally(() => setLoading(false))
     }, [country])
+
+    useEffect(() => {
+        if (!country || activeTab !== 'Știri') return
+        setNewsLoading(true)
+        setCategoryNews([])
+        getNewsByCategory(country.code, activeCategory)
+            .then(res => setCategoryNews(res))
+            .finally(() => setNewsLoading(false))
+    }, [country, activeCategory, activeTab])
+
+    useEffect(() => {
+        if (!country || activeTab !== 'Istoric') return
+
+        // Dacă avem deja history pentru această țară, nu mai apelăm
+        if (historyCache[country.code]) {
+            setHistory(historyCache[country.code])
+            return
+        }
+
+        setHistoryLoading(true)
+        setHistory(null)
+        getAiHistory(country.code)
+            .then(res => {
+                setHistory(res)
+                setHistoryCache(prev => ({ ...prev, [country.code]: res }))
+            })
+            .finally(() => setHistoryLoading(false))
+    }, [country, activeTab])
 
     if (!country) return null
 
@@ -174,10 +208,10 @@ function CountryModal({ country, onClose }) {
                             background: 'rgba(255,255,255,0.03)',
                             border: '1px solid rgba(255,255,255,0.07)',
                         }}>
-                            {loading && <p style={{ color: '#64748b' }}>Se încarcă...</p>}
-                            {data && (
+                            {historyLoading && <p style={{ color: '#64748b' }}>Se încarcă...</p>}
+                            {history && (
                                 <p style={{ color: '#94a3b8', fontSize: '14px', lineHeight: 1.8 }}>
-                                    {data.historySummary}
+                                    {history}
                                 </p>
                             )}
                         </div>
@@ -223,35 +257,97 @@ function CountryModal({ country, onClose }) {
                     )}
 
                     {activeTab === 'Știri' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {loading && <p style={{ color: '#64748b' }}>Se încarcă...</p>}
-                            {data && data.news.map((item, i) => (
-                                <a key={i} href={item.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-                                    <div style={{
-                                        display: 'flex',
-                                        gap: '12px',
-                                        padding: '14px',
-                                        borderRadius: '12px',
-                                        background: 'rgba(255,255,255,0.03)',
-                                        border: '1px solid rgba(255,255,255,0.07)',
-                                        cursor: 'pointer',
-                                        transition: 'border-color 0.2s',
-                                    }}
-                                        onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(96,165,250,0.4)'}
-                                        onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'}
+                        <div style={{ display: 'flex', gap: '16px' }}>
+                            {/* Categorii pe lateral stânga */}
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '4px',
+                                minWidth: '140px',
+                                flexShrink: 0,
+                            }}>
+                                {[
+                                    { id: 'GENERAL', emoji: '🌐' },
+                                    { id: 'WORLD', emoji: '🌍' },
+                                    { id: 'NATION', emoji: '🏛️' },
+                                    { id: 'BUSINESS', emoji: '💼' },
+                                    { id: 'TECHNOLOGY', emoji: '💻' },
+                                    { id: 'ENTERTAINMENT', emoji: '🎬' },
+                                    { id: 'SPORTS', emoji: '⚽' },
+                                    { id: 'SCIENCE', emoji: '🔬' },
+                                    { id: 'HEALTH', emoji: '❤️' },
+                                ].map(cat => (
+                                    <button
+                                        key={cat.id}
+                                        onClick={() => setActiveCategory(cat.id)}
+                                        style={{
+                                            padding: '8px 12px',
+                                            borderRadius: '10px',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            fontSize: '12px',
+                                            fontWeight: 600,
+                                            textAlign: 'left',
+                                            transition: 'all 0.2s',
+                                            background: activeCategory === cat.id
+                                                ? 'rgba(96,165,250,0.15)'
+                                                : 'transparent',
+                                            color: activeCategory === cat.id ? '#60a5fa' : '#64748b',
+                                            outline: activeCategory === cat.id
+                                                ? '1px solid rgba(96,165,250,0.3)'
+                                                : '1px solid transparent',
+                                        }}
                                     >
-                                        {item.image && (
-                                            <img src={item.image} alt={item.title} style={{
-                                                width: '80px', height: '60px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0
-                                            }} />
-                                        )}
-                                        <div>
-                                            <p style={{ color: '#e2e8f0', fontSize: '13px', fontWeight: 600, marginBottom: '4px', lineHeight: 1.4 }}>{item.title}</p>
-                                            <p style={{ color: '#475569', fontSize: '11px' }}>{item.source} · {new Date(item.publishedAt).toLocaleDateString()}</p>
+                                        {cat.emoji} {cat.id}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Separator */}
+                            <div style={{ width: '1px', background: 'rgba(255,255,255,0.07)', flexShrink: 0 }} />
+
+                            {/* Lista de știri */}
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px', minWidth: 0 }}>
+                                {newsLoading && <p style={{ color: '#64748b' }}>Se încarcă...</p>}
+                                {!newsLoading && categoryNews.length === 0 && (
+                                    <p style={{ color: '#64748b', fontSize: '14px' }}>
+                                        Nu există știri pentru această categorie.
+                                    </p>
+                                )}
+                                {categoryNews.map((item, i) => (
+                                    <a key={i} href={item.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+                                        <div
+                                            style={{
+                                                display: 'flex',
+                                                gap: '12px',
+                                                padding: '14px',
+                                                borderRadius: '12px',
+                                                background: 'rgba(255,255,255,0.03)',
+                                                border: '1px solid rgba(255,255,255,0.07)',
+                                                cursor: 'pointer',
+                                                transition: 'border-color 0.2s',
+                                            }}
+                                            onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(96,165,250,0.4)'}
+                                            onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'}
+                                        >
+                                            {item.image && (
+                                                <img src={item.image} alt={item.title} style={{
+                                                    width: '80px', height: '60px', borderRadius: '8px',
+                                                    objectFit: 'cover', flexShrink: 0
+                                                }} />
+                                            )}
+                                            <div style={{ minWidth: 0 }}>
+                                                <p style={{ color: '#e2e8f0', fontSize: '13px', fontWeight: 600, marginBottom: '4px', lineHeight: 1.4 }}>
+                                                    {item.title}
+                                                </p>
+                                                <p style={{ color: '#475569', fontSize: '11px' }}>
+                                                    {item.source} · {new Date(item.publishedAt).toLocaleDateString()}
+                                                </p>
+                                            </div>
                                         </div>
-                                    </div>
-                                </a>
-                            ))}
+                                    </a>
+                                ))}
+                            </div>
                         </div>
                     )}
 

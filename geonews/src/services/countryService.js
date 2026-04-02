@@ -7,12 +7,12 @@ export const getCountryInfo = async (countryCode) => {
   return response.data
 }
 
-export const getAiSummary = async (countryCode) => {
+export const getAiHistory = async (countryCode) => {
   const response = await axios.get(`${API_BASE}/country/history/${countryCode}`)
   return response.data
 }
 
 export const getNewsByCategory = async (countryCode,category) => {
-  const response = await axios.get(`${API_BASE}/country/history/${countryCode}/${category}`)
+  const response = await axios.get(`${API_BASE}/country/${countryCode}/${category}`)
   return response.data
 }
