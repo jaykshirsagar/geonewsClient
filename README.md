@@ -1,6 +1,6 @@
 # 🌍 GeoNews — Frontend
 
-> O aplicație interactivă care îți permite să explorezi lumea — dă click pe orice țară și descoperă informații istorice, știri recente și galerii foto.
+> O aplicație interactivă care îți permite să explorezi lumea — dă click pe orice țară și descoperă informații istorice generate de AI, știri recente pe categorii și galerii foto.
 
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![Vite](https://img.shields.io/badge/Vite-6-646CFF?style=for-the-badge&logo=vite&logoColor=white)
@@ -15,9 +15,10 @@
 - 🌙 **Dark / Light mode** automat după tema sistemului, cu buton de toggle
 - 📋 **Modal cu 4 tab-uri** per țară:
   - 🌍 **Info** — steag, capitală, populație, limbă, monedă, suprafață
-  - 📖 **Istoric** — rezumat Wikipedia
+  - 📖 **Istoric** — rezumat istoric generat de Gemini AI (cu cache local)
   - 🖼️ **Galerie** — poze reprezentative din Unsplash
-  - 📰 **Știri** — știri recente din GNews
+  - 📰 **Știri** — știri recente filtrate pe 9 categorii
+- 💾 **Cache pentru istoric** — history-ul generat de AI nu se reîncarcă la fiecare deschidere
 - 🚫 Hartă blocată la limitele lumii (fără scroll infinit)
 
 ---
@@ -44,8 +45,7 @@
 
 ```bash
 # Clonează repo-ul
-git clone https://github.com/username/geonews.git
-cd geonews/client/geonews
+git clone https://github.com/jaykshirsagar/geonewsServer.git
 
 # Instalează dependințele
 npm install
@@ -56,63 +56,55 @@ npm run dev
 
 Aplicația va fi disponibilă la **http://localhost:5173**
 
-### Build pentru producție
+---
+
+## ⚙️ Configurare environment
+
+Proiectul folosește profile Vite pentru a diferenția între development și producție.
+
+**`.env.development`** — folosit automat la `npm run dev`:
+```env
+VITE_API_URL=http://localhost:8080/api
+```
+
+**`.env.production`** — folosit automat la `npm run build`:
+```env
+VITE_API_URL=/api
+```
+
+---
+
+## 📦 Build pentru producție
 
 ```bash
 npm run build
 ```
 
----
-
-## ⚙️ Configurare
-
-Creează un fișier `.env.production` în folderul `client/geonews/`:
-
-```env
-VITE_API_URL=https://url-backend/api
-```
-
-Pentru development, URL-ul default este `http://localhost:8080/api`.
+Copiază conținutul folderului `dist/` în `server/src/main/resources/static/` pentru a fi servit direct din Spring Boot.
 
 ---
 
 ## 📁 Structura proiectului
 
 ```
-geonews/
-├── public/
-└── src/
-    ├── components/
-    │   ├── WorldMap.jsx        # Harta interactivă Leaflet
-    │   └── CountryModal.jsx    # Modal cu tab-uri per țară
-    ├── services/
-    │   └── countryService.js   # Axios calls către backend
-    ├── App.jsx
-    └── index.css
+src/
+├── components/
+│   ├── WorldMap.jsx        # Harta interactivă Leaflet
+│   └── CountryModal.jsx    # Modal cu tab-uri per țară
+├── services/
+│   └── countryService.js   # Axios calls către backend
+├── App.jsx
+└── index.css
 ```
 
 ---
 
-## 🐳 Docker
+## 📡 Endpoints consumate
 
-```bash
-# Build imagine
-docker build -t geonews-frontend .
+| Endpoint | Descriere |
+|----------|-----------|
+| `GET /api/country/{code}` | Info de bază, galerie, știri generale |
+| `GET /api/country/{code}/{category}` | Știri pe categorie |
+| `GET /api/country/history/{code}` | Istoric generat de Gemini AI |
 
-# Rulare container
-docker run -p 3000:80 geonews-frontend
-```
-
----
-
-## 🔗 Legătură cu Backend
-
-Frontend-ul consumă un singur endpoint:
-
-```
-GET /api/country/{countryCode}
-```
-
-Exemplu: `GET /api/country/RO`
-
-Vezi [GeoNews Backend](https://github.com/jaykshirsagar/geonewsServer) pentru detalii.
+Categorii disponibile: `GENERAL` `WORLD` `NATION` `BUSINESS` `TECHNOLOGY` `ENTERTAINMENT` `SPORTS` `SCIENCE` `HEALTH`
